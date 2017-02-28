@@ -1,0 +1,14 @@
+body {
+  font-size: 16px;
+}
+.container {
+  border: 1px solid #333;
+  margin-top: 10px;
+}
+.main {
+  margin: 50px;
+}
+.footer {
+  text-align: center;
+  margin: 50px;
+}
