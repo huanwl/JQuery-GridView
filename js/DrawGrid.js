@@ -170,11 +170,39 @@
         return "<tr KeyID=" + KeyID + ">" + html + "</tr>";
       },
       wrapTable: function(html){
-        return "<table class='table'>" + html +"</table>";
+        return "<table class='table' style='margin:0'>" + html +"</table>";
       }
     };
 
     Table.init(options.data);
+
+    var Pager = {
+      init: function(){
+        var html = "";
+        var btn_prev = "<a>上一頁</a>";
+        var btn_next = "<a>下一頁</a>";
+        var select = "<select></select>";
+
+        html2 = "Page size: <select><option>10</option><option>20</option></select>";
+        html2 = this.wrapDiv(html2, "pull-left");
+        $(div).append(html2);
+
+        html2 = "View 1-10 of 23";
+        html2 = this.wrapDiv(html2, "pull-right");
+        $(div).append(html2);
+
+        html = btn_prev + " " + select + " " + btn_next;
+        html = this.wrapDiv(html, "text-center");
+        $(div).append(html);
+
+
+      },
+      wrapDiv: function(html, className){
+        return "<div class='" + className + "'>" + html + "</div>";
+      }
+    };
+
+    Pager.init();
 
     var Events = {
       init: function(){
