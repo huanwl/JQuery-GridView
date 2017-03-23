@@ -2,12 +2,12 @@
 
   var GridView = function(div, options)
   {
-    var modelClass = ".grid-model";
-    $(div).append("<div class='grid-model'></div>");
-    var tableClass = ".grid-table";
-    $(div).append("<div class='grid-table'></div>");
-    var pagerClass = ".grid-pager";
-    $(div).append("<div class='grid-pager'></div>");
+    var modelClass = "grid-model";
+    $(div).append("<div class='" + modelClass + "'></div>");
+    var tableClass = "grid-table";
+    $(div).append("<div class='" + tableClass + "'></div>");
+    var pagerClass = "grid-pager";
+    $(div).append("<div class='" + pagerClass + "'></div>");
 
     var pageSizeArray = [5, 10, 20, 30];
 
@@ -15,7 +15,7 @@
       init: function(){
         var json = JSON.stringify(options.data);
         var html = '<textarea class="json" style="display:none">' + json + '</textarea>';
-        $(div).find(modelClass).append(html);
+        $(div).find('.' + modelClass).append(html);
       },
       getIndexById: function(models, id){
         for (var i in models) {
@@ -27,7 +27,7 @@
         return -1;
       },
       getJsonData: function(div){
-        var data = $(div).find('textarea.json').html();
+        var data = $(div).find('.' + modelClass).find('textarea.json').html();
         if (data != undefined && data != null && data != '') {
           return JSON.parse(data);
         }
@@ -35,7 +35,7 @@
       },
       setJsonData: function(div, models){
         var json = JSON.stringify(models);
-        $(div).find(modelClass).find('textarea.json').html(json);
+        $(div).find('.' + modelClass).find('textarea.json').html(json);
       },
       getNewKeyID: function(){
         var dt = new Date();
@@ -55,6 +55,9 @@
           }
         }
         return false;
+      },
+      getLength: function(){
+        return this.getJsonData(div).length;
       }
     };
 
@@ -67,66 +70,74 @@
         pagerTextClass: "pagerText"
       },
       pagerSize: function(){
-        return $(div).find(pagerClass).find("." + this.property.pagerSizeClass);
+        return $(div).find('.' + pagerClass).find("." + this.property.pagerSizeClass);
       },
       pagerSelect: function(){
-        return $(div).find(pagerClass).find("." + this.property.pagerSelectClass);
+        return $(div).find('.' + pagerClass).find("." + this.property.pagerSelectClass);
       },
       pagerText: function(){
-        return $(div).find(pagerClass).find("." + this.property.pagerTextClass);
+        return $(div).find('.' + pagerClass).find("." + this.property.pagerTextClass);
       },
       init: function(){
-        $(div).find(pagerClass).append("<div class='pull-left " + this.property.pagerSizeClass + "'></div>");
-        $(div).find(pagerClass).append("<div class='pull-right " + this.property.pagerTextClass + "'></div>");
-        $(div).find(pagerClass).append("<div class='text-center " + this.property.pagerSelectClass + "'></div>");
+        $(div).find('.' + pagerClass).append("<div class='pull-left " + this.property.pagerSizeClass + "'></div>");
+        $(div).find('.' + pagerClass).append("<div class='pull-right " + this.property.pagerTextClass + "'></div>");
+        $(div).find('.' + pagerClass).append("<div class='text-center " + this.property.pagerSelectClass + "'></div>");
 
         this.getSizeSelect();
         this.getPageText(0);
-        this.getPageSelect();
+        this.getPageSelect(0);
       },
       wrapDiv: function(html, className){
         return "<div class='" + className + "'>" + html + "</div>";
       },
-      getPageSelect: function(){
-        // 分頁選擇器
-        var models = Model.getJsonData(div);
-        var len = models.length;
-        var size = parseInt($(div).find(pagerClass).find(".page-size").val());
+      getPageSize: function(){
+        return parseInt($(div).find('.' + pagerClass).find(".page-size").val());
+      },
+      getPageCount: function(){
+        var len = Model.getLength();
+        var size = this.getPageSize();
 
         var page_count = Math.floor(len / size);
         var rear = len % size;
         if (rear > 0) {
           page_count += 1;
         }
+        return page_count;
+      },
+      getPageRear: function(){
+        var len = Model.getLength();
+        var size = this.getPageSize();
+        return len % size;
+      },
+      getPageSelect: function(index){
+        // 分頁選擇器
+        var page_count = this.getPageCount();
 
         var btn_prev = "<a>上一頁</a>";
         var btn_next = "<a>下一頁</a>";
         var select = "<select class='page-select'></select>";
-
         var html = btn_prev + " " + select + " " + btn_next;
-        //html = this.wrapDiv(html, "text-center");
+
+        this.pagerSelect().empty();
         this.pagerSelect().append(html);
 
         for (var i = 1; i <= page_count; i++){
           this.pagerSelect().find(".page-select").append("<option value'" + i + "'>" + i +"</option>");
         }
+
+        this.pagerSelect().find(".page-select").val(index + 1);
       },
       getPageText: function(index){
         // 目前分頁顯示文字
-        var models = Model.getJsonData(div);
-        var len = models.length;
-        var size = parseInt($(div).find(pagerClass).find(".page-size").val());
-
-        var page_count = Math.floor(len / size);
-        var rear = len % size;
-        if (rear > 0) {
-          page_count += 1;
-        }
+        var len = Model.getLength();
+        var size = this.getPageSize();
+        var page_count = this.getPageCount();
+        var rear = this.getPageRear();
 
         var start = 0, end = 0;
-        if (index == page_count - 1) {
-          start = index * size + 1;
-          end = start + rear - 1;
+        if (index == page_count - 1 && rear > 0) {
+            start = index * size + 1;
+            end = start + rear - 1;
         }
         else {
           start = index * size + 1;
@@ -134,7 +145,7 @@
         }
 
         var html = "View " + start + "-" + end + " of " + len;
-        html = this.wrapDiv(html, "pull-right");
+
         this.pagerText().empty();
         this.pagerText().append(html);
       },
@@ -145,26 +156,21 @@
           optionHtml += "<option>" + pageSizeArray[i] + "</option>";
         }
         var html = "Page size: <select class='page-size'>" + optionHtml + "</select>";
-        html = this.wrapDiv(html, "pull-left");
 
         this.pagerSize().append(html);
       },
       getPageModels: function(index){
         // 目前分頁顯示文字
         var models = Model.getJsonData(div);
-        var len = models.length;
-        var size = parseInt($(div).find(pagerClass).find(".page-size").val());
-
-        var page_count = Math.floor(len / size);
-        var rear = len % size;
-        if (rear > 0) {
-          page_count += 1;
-        }
+        var len = Model.getLength();
+        var size = this.getPageSize();
+        var page_count = this.getPageCount();
+        var rear = this.getPageRear();
 
         var start = 0, end = 0;
-        if (index == page_count - 1) {
-          start = index * size + 1;
-          end = start + rear - 1;
+        if (index == page_count - 1 && rear > 0) {
+            start = index * size + 1;
+            end = start + rear - 1;
         }
         else {
           start = index * size + 1;
@@ -196,8 +202,8 @@
         }
         // 包覆 table 標籤
         html = this.wrapTable(html);
-        $(div).find(tableClass).empty();
-        $(div).find(tableClass).append(html);
+        $(div).find('.' + tableClass).empty();
+        $(div).find('.' + tableClass).append(html);
       },
       drawInputRow: function(heads, model, isNoWrap){
         var row_html = "<td><button class='btn btn-primary grid-save'>儲存</button><button class='btn btn-warning grid-cancel'>取消</button><td>";
@@ -312,8 +318,8 @@
 
     var Events = {
       init: function(){
-        var table = $(div).find(tableClass).find('table');
-        var pager = $(div).find(pagerClass);
+        var table = $(div).find('.' + tableClass);
+        var pager = $(div).find('.' + pagerClass);
         $(table).on('click', 'button.grid-create', function() {
           return Events.create(table);
         });
@@ -334,13 +340,20 @@
           return Events.delete(row, div);
         });
         $(pager).on('change', 'select.page-select', function() {
-          var index = parseInt($(this).val());
+          var index = parseInt($(this).val()) - 1;
           return Events.changePage(index);
         });
       },
       create: function(table){
+        var page_end = Pager.getPageCount() - 1;
+        if (Pager.getPageRear() == 0) {
+          page_end += 1;
+        }
+        console.log(Pager.getPageRear()+" "+page_end);
+        Events.changePage(page_end);
+
         var html = Table.drawInputRow(options.heads);
-        $(table).append(html);
+        $(table).find('table').append(html);
       },
       edit: function(row, div){
         var models = Model.getJsonData(div);
@@ -395,6 +408,9 @@
         $(row).empty();
         var html = Table.drawDataRow(options.heads, newModel, true);
         $(row).html(html);
+
+        var page_end = Pager.getPageCount() - 1;
+        Events.changePage(page_end);
       },
       cancel: function(row, div){
         var models = Model.getJsonData(div);
@@ -416,15 +432,37 @@
           var index = Model.getIndexById(models, id);
           models.splice(index, 1);
           Model.setJsonData(div, models);
-          $(row).remove();
+          //$(row).remove();
+          index = parseInt(index) + 1;
+          var size = Pager.getPageSize();
+          var page_index = Math.floor(index / size);
+          var rear = index % size;
+          if (rear > 0) {
+            page_index += 1;
+          }
+
+          Events.changePage(page_index - 1);
         }
         else {
           return false;
         }
       },
       changePage: function(index){
-        Table.init(index - 1);
-        Pager.getPageText(index - 1);
+        if (index < Pager.getPageCount()) {
+          Table.init(index);
+          Pager.getPageText(index);
+          Pager.getPageSelect(index);
+        }
+        else if (index > 0) {
+          Table.init(index - 1);
+          Pager.getPageText(index - 1);
+          Pager.getPageSelect(index - 1);
+        }
+        else {
+          Table.init(0);
+          Pager.getPageText(0);
+          Pager.getPageSelect(0);
+        }
       }
     };
 
