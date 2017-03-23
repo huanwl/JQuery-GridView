@@ -2,12 +2,20 @@
 
   var GridView = function(div, options)
   {
+    var modelClass = ".grid-model";
+    $(div).append("<div class='grid-model'></div>");
+    var tableClass = ".grid-table";
+    $(div).append("<div class='grid-table'></div>");
+    var pagerClass = ".grid-pager";
+    $(div).append("<div class='grid-pager'></div>");
+
+    var pageSizeArray = [5, 10, 20, 30];
 
     var Model = {
       init: function(){
         var json = JSON.stringify(options.data);
         var html = '<textarea class="json" style="display:none">' + json + '</textarea>';
-        $(div).append(html);
+        $(div).find(modelClass).append(html);
       },
       getIndexById: function(models, id){
         for (var i in models) {
@@ -27,7 +35,7 @@
       },
       setJsonData: function(div, models){
         var json = JSON.stringify(models);
-        $(div).find('textarea.json').html(json);
+        $(div).find(modelClass).find('textarea.json').html(json);
       },
       getNewKeyID: function(){
         var dt = new Date();
@@ -52,18 +60,144 @@
 
     Model.init();
 
+    var Pager = {
+      property: {
+        pagerSizeClass: "pagerSize",
+        pagerSelectClass: "pagerSelect",
+        pagerTextClass: "pagerText"
+      },
+      pagerSize: function(){
+        return $(div).find(pagerClass).find("." + this.property.pagerSizeClass);
+      },
+      pagerSelect: function(){
+        return $(div).find(pagerClass).find("." + this.property.pagerSelectClass);
+      },
+      pagerText: function(){
+        return $(div).find(pagerClass).find("." + this.property.pagerTextClass);
+      },
+      init: function(){
+        $(div).find(pagerClass).append("<div class='pull-left " + this.property.pagerSizeClass + "'></div>");
+        $(div).find(pagerClass).append("<div class='pull-right " + this.property.pagerTextClass + "'></div>");
+        $(div).find(pagerClass).append("<div class='text-center " + this.property.pagerSelectClass + "'></div>");
+
+        this.getSizeSelect();
+        this.getPageText(0);
+        this.getPageSelect();
+      },
+      wrapDiv: function(html, className){
+        return "<div class='" + className + "'>" + html + "</div>";
+      },
+      getPageSelect: function(){
+        // 分頁選擇器
+        var models = Model.getJsonData(div);
+        var len = models.length;
+        var size = parseInt($(div).find(pagerClass).find(".page-size").val());
+
+        var page_count = Math.floor(len / size);
+        var rear = len % size;
+        if (rear > 0) {
+          page_count += 1;
+        }
+
+        var btn_prev = "<a>上一頁</a>";
+        var btn_next = "<a>下一頁</a>";
+        var select = "<select class='page-select'></select>";
+
+        var html = btn_prev + " " + select + " " + btn_next;
+        //html = this.wrapDiv(html, "text-center");
+        this.pagerSelect().append(html);
+
+        for (var i = 1; i <= page_count; i++){
+          this.pagerSelect().find(".page-select").append("<option value'" + i + "'>" + i +"</option>");
+        }
+      },
+      getPageText: function(index){
+        // 目前分頁顯示文字
+        var models = Model.getJsonData(div);
+        var len = models.length;
+        var size = parseInt($(div).find(pagerClass).find(".page-size").val());
+
+        var page_count = Math.floor(len / size);
+        var rear = len % size;
+        if (rear > 0) {
+          page_count += 1;
+        }
+
+        var start = 0, end = 0;
+        if (index == page_count - 1) {
+          start = index * size + 1;
+          end = start + rear - 1;
+        }
+        else {
+          start = index * size + 1;
+          end = start + size - 1;
+        }
+
+        var html = "View " + start + "-" + end + " of " + len;
+        html = this.wrapDiv(html, "pull-right");
+        this.pagerText().empty();
+        this.pagerText().append(html);
+      },
+      getSizeSelect: function(){
+        // 分頁大小設定
+        var optionHtml = "";
+        for (var i = 0; i < pageSizeArray.length; i++) {
+          optionHtml += "<option>" + pageSizeArray[i] + "</option>";
+        }
+        var html = "Page size: <select class='page-size'>" + optionHtml + "</select>";
+        html = this.wrapDiv(html, "pull-left");
+
+        this.pagerSize().append(html);
+      },
+      getPageModels: function(index){
+        // 目前分頁顯示文字
+        var models = Model.getJsonData(div);
+        var len = models.length;
+        var size = parseInt($(div).find(pagerClass).find(".page-size").val());
+
+        var page_count = Math.floor(len / size);
+        var rear = len % size;
+        if (rear > 0) {
+          page_count += 1;
+        }
+
+        var start = 0, end = 0;
+        if (index == page_count - 1) {
+          start = index * size + 1;
+          end = start + rear - 1;
+        }
+        else {
+          start = index * size + 1;
+          end = start + size - 1;
+        }
+
+        var newModels = [];
+        for (var i = start - 1; i < end; i++) {
+          newModels.push(models[i]);
+        }
+
+        return newModels;
+      }
+    };
+
+    Pager.init();
+
     var Table = {
-      init: function(data){
+      init: function(index){
         var html = "";
         // 畫出表頭
         html += this.drawHeadRow(options.heads);
+
+        var data = Pager.getPageModels(index);
+
         // 畫出資料列
         for (var i in data){
           html += this.drawDataRow(options.heads, data[i]);
         }
         // 包覆 table 標籤
         html = this.wrapTable(html);
-        $(div).append(html);
+        $(div).find(tableClass).empty();
+        $(div).find(tableClass).append(html);
       },
       drawInputRow: function(heads, model, isNoWrap){
         var row_html = "<td><button class='btn btn-primary grid-save'>儲存</button><button class='btn btn-warning grid-cancel'>取消</button><td>";
@@ -174,39 +308,12 @@
       }
     };
 
-    Table.init(options.data);
-
-    var Pager = {
-      init: function(){
-        var html = "";
-        var btn_prev = "<a>上一頁</a>";
-        var btn_next = "<a>下一頁</a>";
-        var select = "<select></select>";
-
-        html2 = "Page size: <select><option>10</option><option>20</option></select>";
-        html2 = this.wrapDiv(html2, "pull-left");
-        $(div).append(html2);
-
-        html2 = "View 1-10 of 23";
-        html2 = this.wrapDiv(html2, "pull-right");
-        $(div).append(html2);
-
-        html = btn_prev + " " + select + " " + btn_next;
-        html = this.wrapDiv(html, "text-center");
-        $(div).append(html);
-
-
-      },
-      wrapDiv: function(html, className){
-        return "<div class='" + className + "'>" + html + "</div>";
-      }
-    };
-
-    Pager.init();
+    Table.init(0);
 
     var Events = {
       init: function(){
-        var table = $(div).find('table');
+        var table = $(div).find(tableClass).find('table');
+        var pager = $(div).find(pagerClass);
         $(table).on('click', 'button.grid-create', function() {
           return Events.create(table);
         });
@@ -225,6 +332,10 @@
         $(table).on('click', 'button.grid-delete', function() {
           var row = $(this).closest('tr');
           return Events.delete(row, div);
+        });
+        $(pager).on('change', 'select.page-select', function() {
+          var index = parseInt($(this).val());
+          return Events.changePage(index);
         });
       },
       create: function(table){
@@ -310,6 +421,10 @@
         else {
           return false;
         }
+      },
+      changePage: function(index){
+        Table.init(index - 1);
+        Pager.getPageText(index - 1);
       }
     };
 
